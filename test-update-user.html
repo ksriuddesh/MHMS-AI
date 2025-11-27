@@ -1,0 +1,506 @@
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Update User Data Test - MHMS</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container { 
+      max-width: 900px;
+      margin: 0 auto;
+      background: white; 
+      padding: 40px; 
+      border-radius: 15px; 
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    
+    h1 {
+      color: #667eea;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 32px;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    
+    .section {
+      margin-bottom: 30px;
+      padding: 25px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      border-left: 4px solid #667eea;
+    }
+    
+    h2 { 
+      color: #333; 
+      margin-bottom: 20px;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      font-weight: 600;
+      color: #555;
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+    
+    input, textarea { 
+      width: 100%; 
+      padding: 12px 15px; 
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    button { 
+      width: 100%; 
+      padding: 15px; 
+      margin-top: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white; 
+      border: none; 
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    button:hover { 
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .result { 
+      margin-top: 20px; 
+      padding: 20px; 
+      border-radius: 8px;
+      white-space: pre-wrap;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+    
+    .success { 
+      background-color: #d4edda; 
+      border: 2px solid #c3e6cb;
+      color: #155724;
+    }
+    
+    .error { 
+      background-color: #f8d7da; 
+      border: 2px solid #f5c6cb;
+      color: #721c24;
+    }
+    
+    .status {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    
+    .status.logged-out {
+      background-color: #ffc107;
+      color: #856404;
+    }
+    
+    .status.logged-in {
+      background-color: #28a745;
+      color: white;
+    }
+    
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    
+    @media (max-width: 768px) {
+      .two-column {
+        grid-template-columns: 1fr;
+      }
+      
+      .container {
+        padding: 20px;
+      }
+    }
+    
+    .api-url {
+      background: #fff3cd;
+      padding: 10px;
+      border-radius: 5px;
+      border-left: 4px solid #ffc107;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+    
+    .api-url strong {
+      color: #856404;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 MHMS User Data Updater</h1>
+    <p class="subtitle">Test Login & Update User Data in MongoDB Atlas</p>
+    
+    <div class="api-url">
+      <strong>API Endpoint:</strong> <code id="apiUrlDisplay">http://localhost:5000</code>
+      <button onclick="changeApiUrl()" style="width: auto; padding: 5px 15px; margin: 5px 0 0 10px; font-size: 12px;">Change URL</button>
+    </div>
+    
+    <!-- Login Section -->
+    <div class="section">
+      <h2>
+        📧 Step 1: Login
+        <span id="loginStatus" class="status logged-out">Logged Out</span>
+      </h2>
+      
+      <div class="form-group">
+        <label>Email (Gmail):</label>
+        <input type="email" id="email" placeholder="user@gmail.com" value="">
+      </div>
+      
+      <div class="form-group">
+        <label>Password:</label>
+        <input type="password" id="password" placeholder="Your password" value="">
+      </div>
+      
+      <button onclick="login()" id="loginBtn">🔑 Login</button>
+    </div>
+
+    <!-- Update Data Section -->
+    <div class="section">
+      <h2>✏️ Step 2: Update User Data</h2>
+      
+      <div class="form-group">
+        <label>Full Name:</label>
+        <input type="text" id="name" placeholder="John Doe">
+      </div>
+      
+      <div class="two-column">
+        <div class="form-group">
+          <label>Phone:</label>
+          <input type="text" id="phone" placeholder="+1234567890">
+        </div>
+        
+        <div class="form-group">
+          <label>Date of Birth:</label>
+          <input type="date" id="dateOfBirth">
+        </div>
+      </div>
+      
+      <div class="two-column">
+        <div class="form-group">
+          <label>City:</label>
+          <input type="text" id="city" placeholder="New York">
+        </div>
+        
+        <div class="form-group">
+          <label>State:</label>
+          <input type="text" id="state" placeholder="NY">
+        </div>
+      </div>
+      
+      <div class="two-column">
+        <div class="form-group">
+          <label>Gender:</label>
+          <select id="gender" style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px;">
+            <option value="">Select Gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Theme Preference:</label>
+          <select id="theme" style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px;">
+            <option value="">Select Theme</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
+      </div>
+      
+      <h3 style="margin-top: 25px; margin-bottom: 15px; color: #555; font-size: 16px;">Emergency Contact</h3>
+      
+      <div class="two-column">
+        <div class="form-group">
+          <label>Emergency Contact Name:</label>
+          <input type="text" id="emergencyName" placeholder="Jane Doe">
+        </div>
+        
+        <div class="form-group">
+          <label>Emergency Contact Phone:</label>
+          <input type="text" id="emergencyPhone" placeholder="+1987654321">
+        </div>
+      </div>
+      
+      <button onclick="updateUserData()" id="updateBtn" disabled>💾 Update User Data</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    let API_URL = 'http://localhost:5000';
+    let authToken = localStorage.getItem('authToken');
+    let currentUser = null;
+
+    // Update UI based on login status
+    function updateLoginStatus() {
+      const statusEl = document.getElementById('loginStatus');
+      const updateBtn = document.getElementById('updateBtn');
+      
+      if (authToken) {
+        statusEl.textContent = 'Logged In';
+        statusEl.className = 'status logged-in';
+        updateBtn.disabled = false;
+      } else {
+        statusEl.textContent = 'Logged Out';
+        statusEl.className = 'status logged-out';
+        updateBtn.disabled = true;
+      }
+    }
+
+    // Change API URL
+    function changeApiUrl() {
+      const newUrl = prompt('Enter API URL:', API_URL);
+      if (newUrl) {
+        API_URL = newUrl;
+        document.getElementById('apiUrlDisplay').textContent = API_URL;
+      }
+    }
+
+    // Login function
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const loginBtn = document.getElementById('loginBtn');
+
+      if (!email || !password) {
+        showResult('❌ Please enter email and password', 'error');
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = '⏳ Logging in...';
+
+      try {
+        const response = await fetch(`${API_URL}/api/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          authToken = data.token;
+          currentUser = data.user;
+          localStorage.setItem('authToken', authToken);
+          updateLoginStatus();
+          showResult(
+            `✅ Login successful!\n\n` +
+            `User ID: ${data.user.id}\n` +
+            `Name: ${data.user.name}\n` +
+            `Email: ${data.user.email}\n\n` +
+            `Token saved. You can now update user data.`,
+            'success'
+          );
+        } else {
+          showResult(`❌ Login failed: ${data.message}`, 'error');
+        }
+      } catch (error) {
+        showResult(`❌ Error: ${error.message}\n\nMake sure the backend server is running on ${API_URL}`, 'error');
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = '🔑 Login';
+      }
+    }
+
+    // Update user data function
+    async function updateUserData() {
+      if (!authToken) {
+        showResult('❌ Please login first!', 'error');
+        return;
+      }
+
+      const updateBtn = document.getElementById('updateBtn');
+      updateBtn.disabled = true;
+      updateBtn.textContent = '⏳ Updating...';
+
+      const updateData = {};
+
+      // Basic information
+      const name = document.getElementById('name').value;
+      if (name) updateData.name = name;
+
+      const phone = document.getElementById('phone').value;
+      if (phone) updateData.phone = phone;
+
+      const dateOfBirth = document.getElementById('dateOfBirth').value;
+      if (dateOfBirth) updateData.dateOfBirth = dateOfBirth;
+
+      const gender = document.getElementById('gender').value;
+      if (gender) updateData.gender = gender;
+
+      // Address
+      const city = document.getElementById('city').value;
+      const state = document.getElementById('state').value;
+      if (city || state) {
+        updateData.address = {};
+        if (city) updateData.address.city = city;
+        if (state) updateData.address.state = state;
+      }
+
+      // Emergency contact
+      const emergencyName = document.getElementById('emergencyName').value;
+      const emergencyPhone = document.getElementById('emergencyPhone').value;
+      if (emergencyName || emergencyPhone) {
+        updateData.emergencyContact = {};
+        if (emergencyName) updateData.emergencyContact.name = emergencyName;
+        if (emergencyPhone) updateData.emergencyContact.phone = emergencyPhone;
+      }
+
+      // Preferences
+      const theme = document.getElementById('theme').value;
+      if (theme) {
+        updateData.preferences = { theme };
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        showResult('❌ Please fill in at least one field to update', 'error');
+        updateBtn.disabled = false;
+        updateBtn.textContent = '💾 Update User Data';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/api/user/update-data`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify(updateData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          showResult(
+            `✅ User data updated successfully!\n\n` +
+            `Updated fields:\n${JSON.stringify(updateData, null, 2)}\n\n` +
+            `Full user data:\n${JSON.stringify(data.user, null, 2)}`,
+            'success'
+          );
+          
+          // Clear form fields
+          document.getElementById('name').value = '';
+          document.getElementById('phone').value = '';
+          document.getElementById('dateOfBirth').value = '';
+          document.getElementById('gender').value = '';
+          document.getElementById('city').value = '';
+          document.getElementById('state').value = '';
+          document.getElementById('emergencyName').value = '';
+          document.getElementById('emergencyPhone').value = '';
+          document.getElementById('theme').value = '';
+        } else {
+          if (response.status === 401) {
+            showResult(
+              `❌ Authentication failed: ${data.error}\n\n` +
+              `Your session may have expired. Please login again.`,
+              'error'
+            );
+            authToken = null;
+            localStorage.removeItem('authToken');
+            updateLoginStatus();
+          } else {
+            showResult(`❌ Update failed: ${data.error}`, 'error');
+          }
+        }
+      } catch (error) {
+        showResult(
+          `❌ Error: ${error.message}\n\n` +
+          `Make sure the backend server is running on ${API_URL}`,
+          'error'
+        );
+      } finally {
+        updateBtn.disabled = false;
+        updateBtn.textContent = '💾 Update User Data';
+      }
+    }
+
+    // Show result function
+    function showResult(message, type) {
+      const resultDiv = document.getElementById('result');
+      resultDiv.className = `result ${type}`;
+      resultDiv.textContent = message;
+      resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Check login status on page load
+    updateLoginStatus();
+
+    // Add Enter key support
+    document.getElementById('email').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') login();
+    });
+    
+    document.getElementById('password').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') login();
+    });
+  </script>
+</body>
+</html>

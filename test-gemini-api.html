@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Gemini API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #4f46e5;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .success {
+            color: #10b981;
+        }
+        .error {
+            color: #ef4444;
+        }
+        .info {
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Gemini API Test</h1>
+        <p>This will test if your Gemini API key is working correctly.</p>
+        
+        <button id="testBtn" onclick="testAPI()">Test API Connection</button>
+        <button onclick="testQuestions()">Test Question Generation</button>
+        <button onclick="clearOutput()">Clear</button>
+        
+        <div id="output"></div>
+    </div>
+
+    <script>
+        const API_KEY = 'AIzaSyB8iipPzPyXQqbOcVqql6LTCg_SqSeFcmE';
+        const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent';
+        
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const span = document.createElement('span');
+            span.className = type;
+            span.textContent = message + '\n';
+            output.appendChild(span);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '';
+        }
+        
+        async function testAPI() {
+            const btn = document.getElementById('testBtn');
+            btn.disabled = true;
+            clearOutput();
+            
+            log('🔄 Testing Gemini API connection...', 'info');
+            log('API URL: ' + API_URL, 'info');
+            log('API Key: ' + API_KEY.substring(0, 20) + '...', 'info');
+            log('');
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': API_KEY,
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: 'Say "Hello, the API is working!" in exactly those words.'
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            maxOutputTokens: 100,
+                        }
+                    })
+                });
+                
+                log('Response Status: ' + response.status, response.ok ? 'success' : 'error');
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    log('Error: ' + JSON.stringify(errorData, null, 2), 'error');
+                    btn.disabled = false;
+                    return;
+                }
+                
+                const data = await response.json();
+                log('✅ API Response received!', 'success');
+                log('');
+                log('Full Response:', 'info');
+                log(JSON.stringify(data, null, 2), 'info');
+                log('');
+                
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                    log('Generated Text:', 'success');
+                    log(text, 'success');
+                } else {
+                    log('⚠️ No text in response', 'error');
+                }
+                
+            } catch (error) {
+                log('❌ Error: ' + error.message, 'error');
+                log(error.stack, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+        
+        async function testQuestions() {
+            clearOutput();
+            log('🎯 Testing question generation...', 'info');
+            log('');
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': API_KEY,
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `You are a mental health professional creating a depression assessment. 
+Generate 12-15 unique, clinically relevant questions that help assess depression symptoms.
+
+Guidelines:
+- Use simple, clear language
+- Mix different question types (frequency, intensity, behavioral)
+- Include questions about emotional, physical, and cognitive symptoms
+- Ensure questions are culturally sensitive and non-judgmental
+- Return ONLY a valid JSON array of question strings
+
+Example format: ["Question 1", "Question 2", ...]`
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.9,
+                            topK: 40,
+                            topP: 0.95,
+                            maxOutputTokens: 2048,
+                        }
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    log('❌ API Error: ' + JSON.stringify(errorData, null, 2), 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                
+                log('✅ Raw Response:', 'success');
+                log(text, 'info');
+                log('');
+                
+                // Try to parse questions
+                const jsonMatch = text.match(/\[[\s\S]*\]/);
+                if (jsonMatch) {
+                    const questions = JSON.parse(jsonMatch[0]);
+                    log(`✅ Successfully parsed ${questions.length} questions!`, 'success');
+                    log('');
+                    questions.forEach((q, i) => {
+                        log(`${i + 1}. ${q}`, 'success');
+                    });
+                } else {
+                    log('⚠️ Could not find JSON array in response', 'error');
+                }
+                
+            } catch (error) {
+                log('❌ Error: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

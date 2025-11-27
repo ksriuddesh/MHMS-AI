@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String          @id @default(uuid())
+  email         String          @unique
+  password      String
+  firstName     String?
+  lastName      String?
+  lastLogin     DateTime?
+  sessionToken  String?
+  status        String          @default("active") // active, inactive, suspended
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  profile       PatientProfile?
+  moodEntries   MoodEntry[]
+  assessments   Assessment[]
+  auditLogs     AuditLog[]
+  
+  @@map("users")
+}
+
+model PatientProfile {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  firstName     String
+  lastName      String
+  dateOfBirth   String
+  gender        String
+  patientId     String    @unique
+  phone         String?
+  email         String?
+  addressLine1  String?
+  addressLine2  String?
+  city          String?
+  state         String?
+  zip           String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@map("patient_profiles")
+}
+
+model MoodEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  date      String
+  mood      Int
+  energy    Int
+  anxiety   Int
+  sleep     Int
+  notes     String   @default("")
+  factors   String[] @default([])
+  location  String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("mood_entries")
+  @@index([userId, date])
+}
+
+model Assessment {
+  id                  String   @id @default(uuid())
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type                String
+  date                String
+  score               Int
+  maxScore            Int
+  severity            String
+  responses           Json     @default("{}")
+  questions           String[] @default([])
+  followUpQuestions   String[] @default([])
+  followUpResponses   Json?
+  domain              String?
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  @@map("assessments")
+  @@index([userId, date])
+}
+
+model Provider {
+  id              String   @id @default(uuid())
+  name            String
+  specialty       String
+  rating          Float
+  distance        String
+  avatar          String
+  available       Boolean  @default(true)
+  acceptsInsurance Boolean @default(false)
+  languages       String[] @default([])
+  nextAvailable   String
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("providers")
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  action        String   // create, update, delete, read, login, logout
+  entity        String   // user, patient_profile, mood_entry, assessment
+  entityId      String?
+  changedFields Json?    // Array of field names that changed
+  oldValues     Json?    // Previous values
+  newValues     Json?    // New values
+  ipAddress     String?
+  userAgent     String?
+  
+  createdAt     DateTime @default(now())
+  
+  @@map("audit_logs")
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+}
